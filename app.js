@@ -78,15 +78,14 @@ function watch () {
                 // for each file in directory
                 files.forEach( ( fileName ) => {
 
-                    // Loop through s3Images array
-                    s3Images.forEach( ( i ) => {
+                    // get full path to file
+                    let filePath = path + fileName;
 
+                    let fileExists = s3Images.indexOf(fileName);
+                        
                         // if file doesn't exist then upload
                         // else log that the file exists
-                        if ( fileName !== i ){
-
-                            // get full path to file
-                            var filePath = path + fileName;
+                        if ( fileExists === -1 ){
 
                             fs.readFile(filePath, (err, fileContent) => {
                                 // if unable to read file content, throw error
@@ -109,15 +108,17 @@ function watch () {
                                         console.log( fileName + ' uploaded. Data: ' + JSON.stringify(data) );
                                         // delete file from directory
                                         fs.unlinkSync(filePath);
-                                        consol.log ( fileName + 'deleted from local directory.')
+                                        console.log ( fileName + 'deleted from local directory.')
                                         // // reset fileName
                                         // fileName = '';
                                     }
                                 });
                             });
-                        }else {
+                        } else {
                             console.log( fileName + 'already exists in s3 bucket');
-
+                            // delete file from directory
+                            fs.unlinkSync(filePath);
+                            console.log ( fileName + 'deleted from local directory.')
                         }
 
                     });

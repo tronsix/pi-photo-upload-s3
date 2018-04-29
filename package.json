@@ -8,8 +8,12 @@
     "take-photo": "gphoto2 --trigger-capture",
     "home": "echo hello"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tronsix/pi-photo-upload-s3.git"
+  },
   "keywords": [],
-  "author": "",
+  "author": "tronsix <rodney.a.martinez@gmail.com>",
   "license": "ISC",
   "devDependencies": {},
   "dependencies": {
