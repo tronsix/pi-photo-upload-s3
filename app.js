@@ -1,5 +1,4 @@
 // Tasks
-
     // need to update app so that on watch init app checks to see if a file exists on s3
     // if yes then upload is not performed 
     // else upload is performed then file is deleted from local directory
@@ -20,70 +19,127 @@ const aws = require('aws-sdk'),
  { exec } = require('child_process');
 
 // declare variables
-var path = __dirname + '/gpx/';
-var bucket = 'gphoto2';
+const path = __dirname + '/gpx/';
+const bucket = 'gphoto2';
 
 // Create new S3 client 
-var s3 = new aws.S3();
+const s3 = new aws.S3();
 
-// check to see if gpx folder exist if not create folder
+// check to see if gpx folder exist if yes log folder exists
+// else create new folder, then log out folder created
 
-console.log('initiating folder watcher');
-// watch for files in the gpx folder
-fs.watch( './gpx', (change, filename) => {
+// check to see if camera is connected if yes call watch and tether functions, then log out info
+// else listen for camera to connect, once connected call watch and tether, then log out info
 
-    console.log('New files added to ./gpx' )
+function watch () {
+    console.log( 'Watch initialized' );
 
-    // get list of files from directory
-    fs.readdir(path, (err, files) => {
+    // watch for files in the gpx folder
+    fs.watch( './gpx', ( change, filename ) => {
+
+        console.log( 'New files added to ./gpx' )
+
+        // variable storing existing s3Images for upload validation
+        const s3Images = [];
         
-        console.log('Reading ./gpx directory');
+        // Check s3 to see which files currently exist
+        function checkS3 () {
+            console.log( 'Checking s3 to see which files already exists.' );
 
-        // for each file in directory
-        for (let fileName of files) {
+            s3.listObjectsV2({Bucket: bucket}, (err, data) => {
+                if (err) console.log(err, err.stack);
 
-            // if file exist then ignore and don't upload
+                else {
+                    var contents = data.Contents
 
-            // else
-            // get full path to file
-            var filePath = path + fileName;
+                    contents.forEach((obj) => {
+                        s3Images.forEach((i) => {
+                            // if object !exist within s3Images array then add it.
+                            if (obj.Key !== i){
+                                s3Images.push(obj.Key);
+                                console.log( 'Added ' + obj.Key + ' to s3Images array')
+                            } 
+                        });
+                    });
 
-            fs.readFile(filePath, (err, fileContent) => {
-                // if unable to read file content, throw error
-                if (err) console.log(err);
+                    console.log( 's3 files list up to date.' );
+                    uploadS3
+                }
+            });
+        }
 
-                console.log('uploading ' + fileName + ' to s3.')
+        function uploadS3 () {
+            console.log( 'Upload initialized' )
 
-                // upload to s3
-                s3.putObject({
-                    Bucket: bucket, 
-                    Key: fileName, 
-                    Body: fileContent,
-                    Metadata: {
-                    'content-type': 'image/jpeg'
-                    }
-                }, (err, data) => {
-                    if (err) console.log(err, err.stack); // an error occurred
-                    else {
-                        // successful response
-                        console.log( fileName + ' uploaded. Data: ' + JSON.stringify(data) );
-                        // delete file from directory
-                        fs.unlinkSync(filePath);
-                        // reset fileName
-                        fileName = '';
-                    }
+            // get list of files from directory
+            fs.readdir( path, ( err, files ) => {
+                console.log( 'Reading ./gpx directory' );
+
+                // for each file in directory
+                files.forEach( ( fileName ) => {
+
+                    // Loop through s3Images array
+                    s3Images.forEach( ( i ) => {
+
+                        // if file doesn't exist then upload
+                        // else log that the file exists
+                        if ( fileName !== i ){
+
+                            // get full path to file
+                            var filePath = path + fileName;
+
+                            fs.readFile(filePath, (err, fileContent) => {
+                                // if unable to read file content, throw error
+                                if (err) console.log(err);
+
+                                console.log('Uploading ' + fileName + ' to s3.')
+
+                                // upload to s3
+                                s3.putObject({
+                                    Bucket: bucket, 
+                                    Key: fileName, 
+                                    Body: fileContent,
+                                    Metadata: {
+                                    'content-type': 'image/jpeg'
+                                    }
+                                }, (err, data) => {
+                                    if (err) console.log(err, err.stack); // an error occurred
+                                    else {
+                                        // successful response
+                                        console.log( fileName + ' uploaded. Data: ' + JSON.stringify(data) );
+                                        // delete file from directory
+                                        fs.unlinkSync(filePath);
+                                        consol.log ( fileName + 'deleted from local directory.')
+                                        // // reset fileName
+                                        // fileName = '';
+                                    }
+                                });
+                            });
+                        }else {
+                            console.log( fileName + 'already exists in s3 bucket');
+
+                        }
+
+                    });
                 });
             });
         }
-    });
-});
 
-console.log('initiating tethering process')
+        checkS3
+
+    });
+}
+
+function tether () {
+console.log('Tether initialized')
 // execute child process to initiate tether bash script
-exec('./tether.sh', (error, stdout, stderr) => {
+exec('./scripts/tether.sh', (error, stdout, stderr) => {
     if (error) {
         console.error(`error: ${error}`);
         return;
     }
     console.log(`message: ${stdout}`);
 });
+}
+
+module.exports.checkS3 = checkS3

@@ -13,7 +13,6 @@
   "license": "ISC",
   "devDependencies": {},
   "dependencies": {
-    "aws-sdk": "^2.224.1",
-    "uuid": "^3.2.1"
+    "aws-sdk": "^2.224.1"
   }
 }
