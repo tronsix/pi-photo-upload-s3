@@ -12,7 +12,7 @@
     "type": "git",
     "url": "https://github.com/tronsix/pi-photo-upload-s3.git"
   },
-  "keywords": [],
+  "keywords": ["raspberry pi", "aws"],
   "author": "tronsix <rodney.a.martinez@gmail.com>",
   "license": "ISC",
   "devDependencies": {},
