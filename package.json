@@ -1,0 +1,19 @@
+{
+  "name": "ohsnap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "take-photo": "gphoto2 --trigger-capture",
+    "home": "echo hello"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {},
+  "dependencies": {
+    "aws-sdk": "^2.224.1",
+    "uuid": "^3.2.1"
+  }
+}
