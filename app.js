@@ -31,6 +31,7 @@ checkForDir( gpx, (err, isDirectory) => {
     console.log('Checking if ' + gpx + ' folder exists.');
     if (isDirectory) {
         console.log( gpx + ' folder does exists.');
+        checkForCamera();
         watch();
     } else {
         console.log( gpx + "folder doesn't exist. Creating folder...")
@@ -39,7 +40,8 @@ checkForDir( gpx, (err, isDirectory) => {
                 console.log(err);
             } else {
                 console.log( gpx + 'folder created.')
-                watch();
+            checkForCamera();
+            watch();
             }
         });
     }
@@ -47,7 +49,26 @@ checkForDir( gpx, (err, isDirectory) => {
 
 // check to see if camera is connected if yes call watch and tether functions, then log out info
 // else listen for camera to connect, once connected call watch and tether, then log out info
+function checkForCamera () {
+    let cameraListener = setInterval( function () {
+        console.log('Listening for camera...');
+        // execute child process to see if camera is connected
+        exec('$gp --summary', (err, stdout) => {
+            if (err) {
+                console.log('No camera found.');
+                return;
+            } else {
+                console.log('Camera connected.');
+                stopListener();
+                tether();
+            }
+        });
+    }, 3000);
 
+    function stopListener() {
+        clearInterval(cameraListener);
+    }
+}
 
 function watch () {
     console.log( 'Watch initialized' );
@@ -159,5 +180,3 @@ exec('./scripts/tether.sh', (error, stdout, stderr) => {
     console.log(`message: ${stdout}`);
 });
 }
-
-tether();

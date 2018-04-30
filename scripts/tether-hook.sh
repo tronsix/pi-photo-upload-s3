@@ -14,16 +14,7 @@ reset=$( tput sgr0 );
 
 case "$ACTION" in  
     init)
-        echo "${green}$self: Init ${reset}"
-        # check if a directory exist for gphoto 
-        if [ -d $dir ]
-        then 
-            echo -e "${teal}    $dir folder exists ${reset}"
-        else
-            echo -e "${teal}    $dir folder missing"
-            mkdir $dir
-            echo -e "${teal}    $dir folder created ${reset}"
-        fi
+        echo "${green}$self: Init ${reset}" 
     ;;
     start)
         echo "${green}$self: Start ${reset}"
