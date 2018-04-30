@@ -1,41 +1,59 @@
-// Tasks
-    // need to update app so that on watch init app checks to see if a file exists on s3
-    // if yes then upload is not performed 
-    // else upload is performed then file is deleted from local directory
-
-    // need to clean up bash script so junk isn't logged out during tether (minimize output)
-    
-    // write alternative bash script to periodically check camera for new files
-    // if new files exist then copy them onto local machine for app.js to upload
-    // once files have been copied have process sleep for x minutes then wake up and repeat
-
-// Bugs 
-    // app uploading first doc multiple times looks like sync issue
-
-
 'use strict';
 const aws = require('aws-sdk'),
        fs = require('fs'),
  { exec } = require('child_process');
 
 // declare variables
+const gpx = './gpx';
 const path = __dirname + '/gpx/';
 const bucket = 'gphoto2';
 
 // Create new S3 client 
 const s3 = new aws.S3();
 
+
+function checkForDir(dir, cb) {
+    fs.stat(dir, (err, stats) => {
+        if (err) { 
+            if (err.code === 'ENOENT'){
+                return cb(null, false);
+            } else {
+                return cb(err);
+            }
+        } 
+        return cb(null, stats.isDirectory());
+    });
+}
+
 // check to see if gpx folder exist if yes log folder exists
 // else create new folder, then log out folder created
+checkForDir( gpx, (err, isDirectory) => {
+    console.log('Checking if ' + gpx + ' folder exists.');
+    if (isDirectory) {
+        console.log( gpx + ' folder does exists.');
+        watch();
+    } else {
+        console.log( gpx + "folder doesn't exist. Creating folder...")
+        fs.mkdir( gpx, (err) => {
+            if (err) {
+                console.log(err);
+            } else {
+                console.log( gpx + 'folder created.')
+                watch();
+            }
+        });
+    }
+});
 
 // check to see if camera is connected if yes call watch and tether functions, then log out info
 // else listen for camera to connect, once connected call watch and tether, then log out info
+
 
 function watch () {
     console.log( 'Watch initialized' );
 
     // watch for files in the gpx folder
-    fs.watch( './gpx', ( change, filename ) => {
+    fs.watch( gpx, ( change, filename ) => {
 
         console.log( 'New files added to ./gpx' )
 
@@ -63,7 +81,7 @@ function watch () {
                     });
 
                     console.log( 's3 files list up to date.' );
-                    uploadS3
+                    uploadS3();
                 }
             });
         }
@@ -108,7 +126,7 @@ function watch () {
                                         console.log( fileName + ' uploaded. Data: ' + JSON.stringify(data) );
                                         // delete file from directory
                                         fs.unlinkSync(filePath);
-                                        console.log ( fileName + 'deleted from local directory.')
+                                        console.log ( fileName + ' deleted from local directory.')
                                         // // reset fileName
                                         // fileName = '';
                                     }
@@ -121,12 +139,11 @@ function watch () {
                             console.log ( fileName + 'deleted from local directory.')
                         }
 
-                    });
                 });
             });
         }
 
-        checkS3
+        checkS3();
 
     });
 }
@@ -143,4 +160,4 @@ exec('./scripts/tether.sh', (error, stdout, stderr) => {
 });
 }
 
-module.exports.checkS3 = checkS3
+tether();

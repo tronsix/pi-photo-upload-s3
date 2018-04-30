@@ -12,11 +12,15 @@
     "type": "git",
     "url": "https://github.com/tronsix/pi-photo-upload-s3.git"
   },
-  "keywords": ["raspberry pi", "aws"],
+  "keywords": [
+    "raspberry pi",
+    "aws"
+  ],
   "author": "tronsix <rodney.a.martinez@gmail.com>",
   "license": "ISC",
   "devDependencies": {},
   "dependencies": {
-    "aws-sdk": "^2.224.1"
+    "aws-sdk": "^2.224.1",
+    "chokidar": "^2.0.3"
   }
 }
