@@ -8,6 +8,7 @@ const aws = require('aws-sdk'),
 const gpx = './gpx';
 const imgPath = __dirname + '/gpx/';
 const bucket = 'gphoto2';
+let watching = 0;
 
 // Create new S3 client 
 const s3 = new aws.S3();
@@ -78,53 +79,57 @@ function watch () {
 
     // watch for files in the gpx folder
     watcher.on( 'add', path => {
+        console.log(watching);
+        if (watching === 0){
+            
+            watching += 1;
 
-        console.log(`File ${path} has been added`)
+            console.log(`File ${path} has been added`)
 
-        // variable storing existing s3Images for upload validation
-        const s3Images = [];
-        
-        // Check s3 to see which files currently exist
-        function checkS3 () {
-            console.log( 'Checking s3 to see which files already exists.' );
+            // variable storing existing s3Images for upload validation
+            const s3Images = [];
+            
+            // Check s3 to see which files currently exist
+            function checkS3 () {
+                console.log( 'Checking s3 to see which files already exists.' );
 
-            s3.listObjectsV2({Bucket: bucket}, (err, data) => {
-                if (err) console.log(err, err.stack);
+                s3.listObjectsV2({Bucket: bucket}, (err, data) => {
+                    if (err) console.log(err, err.stack);
 
-                else {
-                    var contents = data.Contents
+                    else {
+                        var contents = data.Contents
 
-                    contents.forEach((obj) => {
-                        s3Images.forEach((i) => {
-                            // if object !exist within s3Images array then add it.
-                            if (obj.Key !== i){
-                                s3Images.push(obj.Key);
-                                console.log( 'Added ' + obj.Key + ' to s3Images array')
-                            } 
+                        contents.forEach((obj) => {
+                            s3Images.forEach((i) => {
+                                // if object !exist within s3Images array then add it.
+                                if (obj.Key !== i){
+                                    s3Images.push(obj.Key);
+                                    console.log( 'Added ' + obj.Key + ' to s3Images array')
+                                } 
+                            });
                         });
-                    });
 
-                    console.log( 's3 files list up to date.' );
-                    uploadS3();
-                }
-            });
-        }
+                        console.log( 's3 files list up to date.' );
+                        uploadS3();
+                    }
+                });
+            }
 
-        function uploadS3 () {
-            console.log( 'Upload initialized.' )
+            function uploadS3 () {
+                console.log( 'Upload initialized.' )
 
-            // get list of files from directory
-            fs.readdir( imgPath, ( err, files ) => {
-                console.log( 'Reading ./gpx directory' );
+                // get list of files from directory
+                fs.readdir( imgPath, ( err, files ) => {
+                    console.log( 'Reading ./gpx directory' );
 
-                // for each file in directory
-                files.forEach( ( fileName ) => {
+                    // for each file in directory
+                    files.forEach( ( fileName ) => {
 
-                    // get full path to file
-                    let filePath = imgPath + fileName;
+                        // get full path to file
+                        let filePath = imgPath + fileName;
 
-                    let fileExists = s3Images.indexOf(fileName);
-                        
+                        let fileExists = s3Images.indexOf(fileName);
+                            
                         // if file doesn't exist then upload
                         // else log that the file exists
                         if ( fileExists === -1 ){
@@ -153,6 +158,7 @@ function watch () {
                                         console.log ( fileName + ' deleted from local directory.')
                                         // // reset fileName
                                         // fileName = '';
+                                        watching = 0;
                                     }
                                 });
                             });
@@ -161,14 +167,17 @@ function watch () {
                             // delete file from directory
                             fs.unlinkSync(filePath);
                             console.log ( fileName + ' deleted from local directory.')
+                             watching = 0;
                         }
-
+                    });
                 });
-            });
+            }
+            checkS3();
+        } else {
+            setTimeout( function() {
+                watch();
+            }, 3000);
         }
-
-        checkS3();
-
     });
 }
 
