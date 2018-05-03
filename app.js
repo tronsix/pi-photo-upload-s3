@@ -1,16 +1,16 @@
 'use strict';
 const aws = require('aws-sdk'),
        fs = require('fs'),
+ chokidar = require('chokidar'),
  { exec } = require('child_process');
 
 // declare variables
 const gpx = './gpx';
-const path = __dirname + '/gpx/';
+const imgPath = __dirname + '/gpx/';
 const bucket = 'gphoto2';
 
 // Create new S3 client 
 const s3 = new aws.S3();
-
 
 function checkForDir(dir, cb) {
     fs.stat(dir, (err, stats) => {
@@ -71,12 +71,15 @@ function checkForCamera () {
 }
 
 function watch () {
-    console.log( 'Watch initialized' );
+
+    const watcher = chokidar.watch( gpx, { persistent: true, awaitWriteFinish: { stabilityThreshold: 2000 }});
+
+    console.log( 'Watch initialized.' );
 
     // watch for files in the gpx folder
-    fs.watch( gpx, ( change, filename ) => {
+    watcher.on( 'add', path => {
 
-        console.log( 'New files added to ./gpx' )
+        console.log(`File ${path} has been added`)
 
         // variable storing existing s3Images for upload validation
         const s3Images = [];
@@ -108,17 +111,17 @@ function watch () {
         }
 
         function uploadS3 () {
-            console.log( 'Upload initialized' )
+            console.log( 'Upload initialized.' )
 
             // get list of files from directory
-            fs.readdir( path, ( err, files ) => {
+            fs.readdir( imgPath, ( err, files ) => {
                 console.log( 'Reading ./gpx directory' );
 
                 // for each file in directory
                 files.forEach( ( fileName ) => {
 
                     // get full path to file
-                    let filePath = path + fileName;
+                    let filePath = imgPath + fileName;
 
                     let fileExists = s3Images.indexOf(fileName);
                         
@@ -154,10 +157,10 @@ function watch () {
                                 });
                             });
                         } else {
-                            console.log( fileName + 'already exists in s3 bucket');
+                            console.log( fileName + ' already exists in s3 bucket');
                             // delete file from directory
                             fs.unlinkSync(filePath);
-                            console.log ( fileName + 'deleted from local directory.')
+                            console.log ( fileName + ' deleted from local directory.')
                         }
 
                 });
